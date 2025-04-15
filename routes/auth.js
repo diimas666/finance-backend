@@ -6,41 +6,54 @@ const nodemailer = require('nodemailer');
 
 // Регистрация
 router.post('/register', async (req, res) => {
-  const { email, password, displayName } = req.body;
+  const { uid, email, displayName, password } = req.body;
   try {
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ $or: [{ uid }, { email }] });
     if (user) {
       return res.status(400).json({ message: 'User already exists' });
     }
-    user = new User({ email, password, displayName });
+
+    user = new User({ uid, email, displayName, password });
     await user.save();
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ userId: user._id, uid }, process.env.JWT_SECRET, {
       expiresIn: '1h',
     });
-    res.status(201).json({ token });
+    res.status(201).json({ token, userId: user._id });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Вход
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { uid, email, displayName, password } = req.body;
   try {
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ $or: [{ uid }, { email }] });
+
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      // Создаём нового пользователя для Google/фейкового логина
+      user = new User({ uid, email, displayName });
+      await user.save();
+    } else if (password) {
+      // Проверяем пароль, если передан
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Invalid credentials' });
+      }
     }
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+
+    const token = jwt.sign({ userId: user._id, uid }, process.env.JWT_SECRET, {
       expiresIn: '1h',
     });
-    res.json({ token, user: { email, displayName: user.displayName } });
+    res.json({
+      token,
+      userId: user._id,
+      user: { email: user.email, displayName: user.displayName },
+    });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -69,12 +82,13 @@ router.post('/forgot-password', async (req, res) => {
       to: email,
       from: process.env.EMAIL_USER,
       subject: 'Password Reset',
-      text: `Click this link to reset your password: https://your-frontend.vercel.app/reset-password/${token}`,
+      text: `Click this link to reset your password: https://personal-finance-tracker-56qe-o3xfnws01-dmytro-ts-projects.vercel.app/reset-password/${token}`,
     };
 
     await transporter.sendMail(mailOptions);
     res.json({ message: 'Password reset email sent' });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -93,6 +107,7 @@ router.post('/reset-password/:token', async (req, res) => {
     await user.save();
     res.json({ message: 'Password updated' });
   } catch (error) {
+    console.error(error);
     res.status(400).json({ message: 'Invalid or expired token' });
   }
 });

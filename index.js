@@ -11,7 +11,15 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      'http://localhost:5173', // Для локальной разработки
+      'https://personal-finance-tracker-56qe-o3xfnws01-dmytro-ts-projects.vercel.app', // Vercel
+    ],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Routes
@@ -21,10 +29,7 @@ app.use('/api/goals', goalRoutes);
 
 // Connect to MongoDB
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI, {})
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
