@@ -15,7 +15,7 @@ app.use(
   cors({
     origin: [
       'http://localhost:5173', // Для локальной разработки
-      'https://personal-finance-tracker-56qe-o3xfnws01-dmytro-ts-projects.vercel.app', // Vercel
+      'https://personal-finance-tracker-56qe.vercel.app', // Vercel
     ],
     credentials: true,
   })

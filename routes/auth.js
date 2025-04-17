@@ -82,7 +82,7 @@ router.post('/forgot-password', async (req, res) => {
       to: email,
       from: process.env.EMAIL_USER,
       subject: 'Password Reset',
-      text: `Click this link to reset your password: https://personal-finance-tracker-56qe-o3xfnws01-dmytro-ts-projects.vercel.app/reset-password/${token}`,
+      text: `Click this link to reset your password: ${process.env.FRONTEND_URL}/reset-password/${token}`,
     };
 
     await transporter.sendMail(mailOptions);
