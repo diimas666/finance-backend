@@ -21,6 +21,10 @@ app.use(
   })
 );
 app.use(express.json());
+// Express backend (Node.js) Пинг для Render / UptimeRobot
+app.get('/api/ping', (req, res) => {
+  res.send('OK');
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
