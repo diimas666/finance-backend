@@ -1,2 +1,4 @@
-node_modules/
+# .gitignore
+config/serviceAccountKey.json
+config/personal-finance-tracker-ed196-firebase-adminsdk-fbsvc-1c786525f2.json
 .env

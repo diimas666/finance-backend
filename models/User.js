@@ -2,22 +2,34 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  uid: { type: String, unique: true }, // Firebase UID
+  firebaseUid: { type: String, unique: true, sparse: true }, // Для Firebase пользователей
   email: { type: String, required: true, unique: true },
-  password: { type: String }, // Убрали required
+  password: { type: String }, // Для MongoDB авторизации
   displayName: { type: String },
+  createdAt: { type: Date, default: Date.now }, // Добавляем временную метку
 });
 
 userSchema.pre('save', async function (next) {
-  if (this.isModified('password') && this.password) {
-    this.password = await bcrypt.hash(this.password, 10);
+  try {
+    if (this.isModified('password') && this.password) {
+      this.password = await bcrypt.hash(this.password, 10);
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
-  if (!this.password) return false; // Если пароль не задан (Google/фейковый логин)
-  return await bcrypt.compare(candidatePassword, this.password);
+  try {
+    if (!this.password) {
+      return false; // Пароль не задан (например, Firebase/Google)
+    }
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    console.error('Error comparing password:', error);
+    return false;
+  }
 };
 
 module.exports = mongoose.model('User', userSchema);
