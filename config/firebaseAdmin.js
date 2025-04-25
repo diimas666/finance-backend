@@ -1,7 +1,8 @@
 const admin = require('firebase-admin');
 
 // Загружаем файл Service Account для Firebase Admin SDK
-const serviceAccount = require('./personal-finance-tracker-ed196-firebase-adminsdk-fbsvc-1c786525f2.json');
+// const serviceAccount = require('./personal-finance-tracker-ed196-firebase-adminsdk-fbsvc-1c786525f2.json');
+const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_JSON);
 
 // Инициализируем Firebase Admin SDK
 admin.initializeApp({
