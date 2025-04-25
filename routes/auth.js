@@ -2,14 +2,20 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const admin = require('../config/firebaseAdmin'); // Импортируем firebase-admin
+const admin = require('../config/firebaseAdmin');
 const User = require('../models/User');
-const authMiddleware = require('../middleware/authMiddleware'); // Добавляем импорт
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Регистрация
 router.post('/register', async (req, res) => {
   const { email, password, displayName } = req.body;
   try {
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required' });
+    }
+
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ message: 'User already exists' });
@@ -36,17 +42,23 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Вход
+// Вход (MongoDB-авторизация)
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required' });
+    }
+
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    if (!user.password || !isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
