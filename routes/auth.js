@@ -111,18 +111,25 @@ router.post('/exchange-token', async (req, res) => {
     let user = await User.findOne({ firebaseUid: decoded.uid });
 
     if (!user) {
-      console.log('Creating new user in MongoDB...');
-      user = new User({
-        firebaseUid: decoded.uid,
-        email: decoded.email,
-        displayName: decoded.name || decoded.email.split('@')[0],
-      });
-      await user.save();
-      console.log('Created new user:', {
-        _id: user._id,
-        email: user.email,
-        displayName: user.displayName,
-      });
+      // Пытаемся найти по email, вдруг уже есть?
+      user = await User.findOne({ email: decoded.email });
+
+      if (!user) {
+        console.log('Creating new user in MongoDB...');
+        user = new User({
+          firebaseUid: decoded.uid,
+          email: decoded.email,
+          displayName: decoded.name || decoded.email.split('@')[0],
+        });
+        await user.save();
+        console.log('Created new user:', {
+          _id: user._id,
+          email: user.email,
+          displayName: user.displayName,
+        });
+      } else {
+        console.log('User with this email already exists:', user.email);
+      }
     }
 
     // Создаем кастомный JWT
