@@ -35,7 +35,7 @@ router.post('/register', async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Registration error:', error.message, error.stack);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -67,7 +67,7 @@ router.post('/login', async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Login error:', error.message, error.stack);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -75,7 +75,11 @@ router.post('/login', async (req, res) => {
 // Обмен Firebase ID Token на кастомный JWT
 router.post('/exchange-token', async (req, res) => {
   const { idToken } = req.body;
-  console.log('Exchange-token request received:', { idToken: idToken ? 'Token present' : 'No token' }); // Логируем получение токена
+  console.log('Exchange-token request received:', {
+    idToken: idToken ? 'Token present' : 'No token',
+    tokenLength: idToken ? idToken.length : 0,
+  });
+
   if (!idToken) {
     console.log('No idToken provided');
     return res.status(400).json({ message: 'No ID token provided' });
@@ -83,19 +87,31 @@ router.post('/exchange-token', async (req, res) => {
 
   try {
     // Проверяем Firebase ID Token
+    console.log('Verifying Firebase ID token...');
     const decoded = await admin.auth().verifyIdToken(idToken);
-    console.log('Decoded Firebase token:', decoded); // Логируем декодированный токен
+    console.log('Decoded Firebase token:', {
+      uid: decoded.uid,
+      email: decoded.email,
+      name: decoded.name,
+      iss: decoded.iss,
+      aud: decoded.aud,
+    });
+
     let user = await User.findOne({ firebaseUid: decoded.uid });
 
     if (!user) {
-      // Создаем нового пользователя в MongoDB
+      console.log('Creating new user in MongoDB...');
       user = new User({
         firebaseUid: decoded.uid,
         email: decoded.email,
         displayName: decoded.name || decoded.email.split('@')[0],
       });
       await user.save();
-      console.log('Created new user:', user); // Логируем созданного пользователя
+      console.log('Created new user:', {
+        _id: user._id,
+        email: user.email,
+        displayName: user.displayName,
+      });
     }
 
     // Создаем кастомный JWT
@@ -112,7 +128,11 @@ router.post('/exchange-token', async (req, res) => {
       token: jwtToken,
     });
   } catch (error) {
-    console.error('Token exchange error:', error.message, error.stack); // Логируем полную ошибку
+    console.error('Token exchange error:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
     res.status(401).json({ message: 'Invalid Firebase token' });
   }
 });
@@ -130,7 +150,7 @@ router.get('/me', authMiddleware, async (req, res) => {
       displayName: user.displayName,
     });
   } catch (error) {
-    console.error('Fetch user error:', error);
+    console.error('Fetch user error:', error.message, error.stack);
     res.status(500).json({ message: 'Server error' });
   }
 });
