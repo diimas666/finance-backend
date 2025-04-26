@@ -1,7 +1,9 @@
+// Загружаем переменные окружения из .env в самом начале
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 
 // Импортируем маршруты
 const authRoutes = require('./routes/auth');
@@ -11,8 +13,8 @@ const goalRoutes = require('./routes/goals');
 // Импортируем инициализированный firebase-admin
 const admin = require('./config/firebaseAdmin');
 
-// Загружаем переменные окружения из .env
-dotenv.config();
+// Проверяем, загрузилась ли FIREBASE_ADMIN_JSON
+console.log('FIREBASE_ADMIN_JSON defined:', !!process.env.FIREBASE_ADMIN_JSON);
 
 const app = express();
 

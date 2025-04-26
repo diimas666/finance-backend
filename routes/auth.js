@@ -11,9 +11,7 @@ router.post('/register', async (req, res) => {
   const { email, password, displayName } = req.body;
   try {
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: 'Email and password are required' });
+      return res.status(400).json({ message: 'Email and password are required' });
     }
 
     let user = await User.findOne({ email });
@@ -47,9 +45,7 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: 'Email and password are required' });
+      return res.status(400).json({ message: 'Email and password are required' });
     }
 
     const user = await User.findOne({ email });
@@ -79,13 +75,16 @@ router.post('/login', async (req, res) => {
 // Обмен Firebase ID Token на кастомный JWT
 router.post('/exchange-token', async (req, res) => {
   const { idToken } = req.body;
+  console.log('Exchange-token request received:', { idToken: idToken ? 'Token present' : 'No token' }); // Логируем получение токена
   if (!idToken) {
+    console.log('No idToken provided');
     return res.status(400).json({ message: 'No ID token provided' });
   }
 
   try {
     // Проверяем Firebase ID Token
     const decoded = await admin.auth().verifyIdToken(idToken);
+    console.log('Decoded Firebase token:', decoded); // Логируем декодированный токен
     let user = await User.findOne({ firebaseUid: decoded.uid });
 
     if (!user) {
@@ -96,6 +95,7 @@ router.post('/exchange-token', async (req, res) => {
         displayName: decoded.name || decoded.email.split('@')[0],
       });
       await user.save();
+      console.log('Created new user:', user); // Логируем созданного пользователя
     }
 
     // Создаем кастомный JWT
@@ -112,7 +112,7 @@ router.post('/exchange-token', async (req, res) => {
       token: jwtToken,
     });
   } catch (error) {
-    console.error('Token exchange error:', error);
+    console.error('Token exchange error:', error.message, error.stack); // Логируем полную ошибку
     res.status(401).json({ message: 'Invalid Firebase token' });
   }
 });
