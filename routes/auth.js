@@ -11,7 +11,9 @@ router.post('/register', async (req, res) => {
   const { email, password, displayName } = req.body;
   try {
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required' });
     }
 
     let user = await User.findOne({ email });
@@ -45,7 +47,9 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required' });
     }
 
     const user = await User.findOne({ email });
@@ -86,10 +90,17 @@ router.post('/exchange-token', async (req, res) => {
   }
 
   try {
+    // ДОПОЛНИТЕЛЬНЫЙ ЛОГ перед проверкой токена
+    console.log('ID Token который пришел на сервер:', idToken);
+
     // Проверяем Firebase ID Token
     console.log('Verifying Firebase ID token...');
     const decoded = await admin.auth().verifyIdToken(idToken);
-    console.log('Decoded Firebase token:', {
+
+    // ДОПОЛНИТЕЛЬНЫЙ ЛОГ после успешной расшифровки токена
+    console.log('Токен расшифрован полностью:', decoded);
+
+    console.log('Decoded Firebase token (короткая версия):', {
       uid: decoded.uid,
       email: decoded.email,
       name: decoded.name,
