@@ -116,6 +116,8 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
 // Получить все цели
 router.get('/', authMiddleware, async (req, res) => {
   try {
+    console.log('Получение целей для пользователя:', req.user.userId); // Добавь это
+
     const goals = await Goal.find({ userId: req.user.userId });
     res.json(goals);
   } catch (error) {
