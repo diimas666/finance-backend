@@ -1,32 +1,24 @@
-const admin = require('../config/firebaseAdmin.js'); // путь к твоему firebaseAdmin.js
+const jwt = require('jsonwebtoken');
 
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.header('Authorization');
-  if (!authHeader) {
-    console.warn('🚫 No Authorization header provided');
-    return res.status(401).json({ message: 'No token provided' });
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'No or invalid token provided' });
   }
 
   const token = authHeader.replace('Bearer ', '').trim();
-  if (!token) {
-    console.warn('🚫 Bearer token is empty after trimming');
-    return res.status(401).json({ message: 'Invalid token format' });
-  }
 
   try {
-    console.log('🔐 Verifying token...');
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    console.log('✅ Token verified:', decodedToken.uid);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.user = {
-      userId: decodedToken.uid,
-      email: decodedToken.email,
+      userId: decoded.userId,
     };
 
     next();
   } catch (error) {
-    console.error('❌ Token verification failed:', error.message);
-    console.error('🔍 Full error:', error);
+    console.error('❌ JWT verification failed:', error.message);
     res.status(401).json({ message: 'Invalid token' });
   }
 };
