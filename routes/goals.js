@@ -6,46 +6,6 @@ const upload = require('../middleware/upload');
 const cloudinary = require('../config/cloudinary');
 
 // Создать цель
-// router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
-//   const { title, targetAmount, savedAmount, deadline } = req.body;
-//   try {
-//     if (!title || !targetAmount) {
-//       return res
-//         .status(400)
-//         .json({ message: 'Title and targetAmount are required' });
-//     }
-
-//     let imageUrl = '';
-//     if (req.file) {
-//       const result = await new Promise((resolve, reject) => {
-//         const stream = cloudinary.uploader.upload_stream(
-//           { folder: 'goals', resource_type: 'image' },
-//           (error, result) => {
-//             if (error) return reject(error);
-//             resolve(result);
-//           }
-//         );
-//         stream.end(req.file.buffer);
-//       });
-//       imageUrl = result.secure_url;
-//     }
-
-//     const goal = new Goal({
-//       userId: req.user.userId,
-//       title,
-//       targetAmount: Number(targetAmount),
-//       savedAmount: Number(savedAmount) || 0,
-//       deadline: deadline || null,
-//       image: imageUrl,
-//     });
-
-//     await goal.save();
-//     res.status(201).json(goal);
-//   } catch (error) {
-//     console.error('Error creating goal:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });
 router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
   const { title, targetAmount, savedAmount, deadline } = req.body;
 
@@ -59,6 +19,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
   );
 
   try {
+    // Валидация обязательных полей
     if (!title || !targetAmount) {
       console.warn('⚠️ Не хватает обязательных полей: title или targetAmount');
       return res
@@ -91,16 +52,19 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
         return res.status(500).json({ message: 'Image upload failed' });
       }
     } else {
-      console.log('ℹ️ Файл не был загружен, продолжаем без изображения.');
+      console.log(
+        'ℹ️ Файл не был загружен, используем пустую строку для image.'
+      );
     }
 
+    // Создаем новую цель
     const goal = new Goal({
       userId: req.user.userId,
       title,
       targetAmount: Number(targetAmount),
       savedAmount: Number(savedAmount) || 0,
       deadline: deadline || null,
-      image: imageUrl,
+      image: imageUrl, // Если файла нет, image будет пустой строкой
     });
 
     await goal.save();
@@ -116,12 +80,12 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
 // Получить все цели
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    console.log('Получение целей для пользователя:', req.user.userId); // Добавь это
-
+    console.log('📋 Получение целей для пользователя:', req.user.userId);
     const goals = await Goal.find({ userId: req.user.userId });
+    console.log(`✅ Найдено ${goals.length} целей`);
     res.json(goals);
   } catch (error) {
-    console.error('Error fetching goals:', error);
+    console.error('❌ Ошибка при получении целей:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -129,15 +93,19 @@ router.get('/', authMiddleware, async (req, res) => {
 // Обновить цель
 router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
   const { title, targetAmount, savedAmount, deadline } = req.body;
+
   try {
+    console.log(`🔄 Обновление цели с ID ${req.params.id}`);
     const goal = await Goal.findById(req.params.id);
 
     if (!goal || goal.userId.toString() !== req.user.userId) {
+      console.warn('⚠️ Цель не найдена или доступ запрещен');
       return res.status(404).json({ message: 'Goal not found' });
     }
 
-    let imageUrl = goal.image;
+    let imageUrl = goal.image; // Сохраняем текущую ссылку на изображение
     if (req.file) {
+      console.log('📤 Загружаем новое изображение в Cloudinary...');
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: 'goals', resource_type: 'image' },
@@ -149,13 +117,30 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
         stream.end(req.file.buffer);
       });
       imageUrl = result.secure_url;
+      console.log('✅ Новое изображение загружено:', imageUrl);
 
-      if (goal.image) {
+      // Удаляем старое изображение, если оно было
+      if (goal.image && goal.image !== '') {
         const publicId = goal.image.split('/').slice(-1)[0].split('.')[0];
-        await cloudinary.uploader.destroy(`goals/${publicId}`);
+        console.log(`🗑️ Удаляем старое изображение с publicId: ${publicId}`);
+        try {
+          await cloudinary.uploader.destroy(`goals/${publicId}`);
+          console.log('✅ Старое изображение удалено');
+        } catch (deleteError) {
+          console.error(
+            '⚠️ Ошибка при удалении старого изображения:',
+            deleteError
+          );
+        }
       }
+    } else {
+      console.log(
+        'ℹ️ Новое изображение не загружено, оставляем текущее:',
+        imageUrl
+      );
     }
 
+    // Обновляем поля цели
     goal.title = title || goal.title;
     goal.targetAmount = targetAmount ? Number(targetAmount) : goal.targetAmount;
     goal.savedAmount = savedAmount ? Number(savedAmount) : goal.savedAmount;
@@ -163,9 +148,10 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     goal.image = imageUrl;
 
     await goal.save();
+    console.log('✅ Цель успешно обновлена:', goal._id);
     res.json(goal);
   } catch (error) {
-    console.error('Error updating goal:', error);
+    console.error('❌ Ошибка при обновлении цели:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -173,21 +159,33 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
 // Удалить цель
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
+    console.log(`🗑️ Удаление цели с ID ${req.params.id}`);
     const goal = await Goal.findById(req.params.id);
 
     if (!goal || goal.userId.toString() !== req.user.userId) {
+      console.warn('⚠️ Цель не найдена или доступ запрещен');
       return res.status(404).json({ message: 'Goal not found' });
     }
 
-    if (goal.image) {
+    // Удаляем изображение из Cloudinary, если оно существует
+    if (goal.image && goal.image !== '') {
       const publicId = goal.image.split('/').slice(-1)[0].split('.')[0];
-      await cloudinary.uploader.destroy(`goals/${publicId}`);
+      console.log(`🗑️ Удаляем изображение с publicId: ${publicId}`);
+      try {
+        await cloudinary.uploader.destroy(`goals/${publicId}`);
+        console.log('✅ Изображение удалено из Cloudinary');
+      } catch (deleteError) {
+        console.error('⚠️ Ошибка при удалении изображения:', deleteError);
+      }
+    } else {
+      console.log('ℹ️ У цели нет изображения для удаления');
     }
 
     await goal.deleteOne();
+    console.log('✅ Цель успешно удалена из базы данных');
     res.json({ message: 'Goal deleted' });
   } catch (error) {
-    console.error('Error deleting goal:', error);
+    console.error('❌ Ошибка при удалении цели:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
