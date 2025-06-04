@@ -1,25 +1,19 @@
 const jwt = require('jsonwebtoken');
 
-const authMiddleware = async (req, res, next) => {
+const authMiddleware = (req, res, next) => {
   const authHeader = req.header('Authorization');
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'No or invalid token provided' });
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Отсутствует токен' });
   }
 
-  const token = authHeader.replace('Bearer ', '').trim();
-
+  const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    req.user = {
-      userId: decoded.userId,
-    };
-
+    req.user = { userId: decoded.userId };
     next();
-  } catch (error) {
-    console.error('❌ JWT verification failed:', error.message);
-    res.status(401).json({ message: 'Invalid token' });
+  } catch (err) {
+    console.error('❌ JWT ошибка:', err.message);
+    res.status(401).json({ message: 'Недействительный токен' });
   }
 };
 
