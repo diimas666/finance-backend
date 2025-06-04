@@ -2,17 +2,17 @@ const express = require('express');
 const router = express.Router();
 const Transaction = require('../models/Transaction');
 const authMiddleware = require('../middleware/authMiddleware');
+const mongoose = require('mongoose'); // 💡 Добавь это
 
 // Создать транзакцию
 router.post('/', authMiddleware, async (req, res) => {
-  const { amount, category, description, type, subcategory, date } = req.body;
+  const { amount, category, description, subcategory, date } = req.body;
   try {
     const transaction = new Transaction({
       userId: req.user.userId,
       amount,
       category,
       description,
-      type,
       subcategory, // Сохраняем subcategory
       date: date ? new Date(date) : Date.now(), // Обрабатываем дату
     });
@@ -36,18 +36,31 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Удалить транзакцию
+
 router.delete('/:id', authMiddleware, async (req, res) => {
+  console.log('➡️ Пытаемся удалить транзакцию');
+  console.log('ID из params:', req.params.id);
+  console.log('User из токена:', req.user);
+
+  // Проверка ID
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ message: 'Некорректный ID транзакции' });
+  }
+
   try {
     const transaction = await Transaction.findOneAndDelete({
       _id: req.params.id,
-      userId: new mongoose.Types.ObjectId(req.user.userId), // 💥 ВОТ ЭТО ДОБАВИЛИ
+      userId: new mongoose.Types.ObjectId(req.user.userId),
     });
+
     if (!transaction) {
+      console.log('❌ Транзакция не найдена');
       return res.status(404).json({ message: 'Транзакция не найдена' });
     }
+
     res.json({ message: 'Транзакция удалена' });
   } catch (error) {
-    console.error('Ошибка удаления транзакции:', error);
+    console.error('🔥 Ошибка при удалении транзакции:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

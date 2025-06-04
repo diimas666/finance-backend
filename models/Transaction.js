@@ -5,9 +5,9 @@ const transactionSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   category: { type: String, required: true },
   description: { type: String },
-  type: { type: String, enum: ['income', 'expense'], required: true },
   date: { type: Date, default: Date.now },
-  subcategories: { type: String },
+  subcategory: { type: String },
 });
 
 module.exports = mongoose.model('Transaction', transactionSchema);
+// type: { type: String, enum: ['income', 'expense'], required: true },
