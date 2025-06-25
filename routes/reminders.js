@@ -1,14 +1,12 @@
 const express = require('express');
-const router = express.Router(); // это мини-приложение, которое обрабатывает определённые маршруты. Он нужен, чтобы разделить логику по файлам.
+const router = express.Router(); // мини-приложение для маршрутов
 const auth = require('../middleware/authMiddleware');
 const Reminder = require('../models/Reminder');
-const { errorMonitor } = require('nodemailer/lib/xoauth2');
-//.save() — метод mongoose-модели
 
 // Получить все напоминания текущего пользователя
 router.get('/', auth, async (req, res) => {
   try {
-    const reminders = await Reminder.find({ userId: req.user._id });
+    const reminders = await Reminder.find({ userId: req.user.userId }); // ✅ исправлено
     res.json(reminders);
   } catch (error) {
     console.error('Ошибка при получении напоминаний:', error.message);
@@ -21,7 +19,7 @@ router.post('/', auth, async (req, res) => {
   try {
     const { date, description, amount } = req.body;
     const newReminder = new Reminder({
-      userId: req.user._id,
+      userId: req.user.userId, // ✅ исправлено
       date,
       description,
       amount,
@@ -33,13 +31,13 @@ router.post('/', auth, async (req, res) => {
     res.status(400).json({ error: 'Некорректные данные' });
   }
 });
-// Удалить напоминание
 
+// Удалить напоминание
 router.delete('/:id', auth, async (req, res) => {
   try {
     const result = await Reminder.deleteOne({
       _id: req.params.id,
-      userId: req.user._id,
+      userId: req.user.userId, // ✅ исправлено
     });
 
     if (result.deletedCount === 0) {
@@ -51,4 +49,5 @@ router.delete('/:id', auth, async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+
 module.exports = router;
