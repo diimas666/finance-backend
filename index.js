@@ -38,7 +38,7 @@ const goalRoutes = require('./routes/goals'); // Финансовые цели
 const aiCategorizationRoutes = require('./routes/aiCategorization'); // AI-категоризация
 const uploadReceiptRoutes = require('./routes/uploadReceipt'); // Загрузка чека
 const receiptAiRoutes = require('./routes/receiptAi'); // AI-анализ чека
-
+const remindersRoutes = require('./routes/reminders'); //напоминания
 // 📌 9. Подключение маршрутов
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
@@ -46,6 +46,7 @@ app.use('/api/goals', goalRoutes);
 app.use('/api', aiCategorizationRoutes);
 app.use('/api', uploadReceiptRoutes);
 app.use('/api', receiptAiRoutes);
+app.use('/api/reminders', remindersRoutes);
 
 // 📌 10. Глобальный обработчик ошибок
 app.use((err, req, res, next) => {
