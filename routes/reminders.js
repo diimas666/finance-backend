@@ -37,14 +37,17 @@ router.post('/', auth, async (req, res) => {
 
 router.delete('/:id', auth, async (req, res) => {
   try {
-    await Reminder.deleteOne({ _id: req.params.id, userId: req._user.id });
+    const result = await Reminder.deleteOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Напоминание не найдено' });
     }
     res.json({ success: true });
   } catch (error) {
-    console.error('Ошибка при удалении ', error.message);
+    console.error('Ошибка при удалении напоминания:', error.message);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
