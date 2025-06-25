@@ -51,3 +51,4 @@ router.delete('/:id', auth, async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+module.exports = router;
