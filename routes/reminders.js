@@ -5,8 +5,6 @@ const Reminder = require('../models/Reminder');
 
 // Получить все напоминания текущего пользователя
 
-const auth = require('../middleware/authMiddleware');
-const Reminder = require('../models/Reminder');
 
 // GET /api/reminders
 router.get('/', auth, async (req, res) => {
