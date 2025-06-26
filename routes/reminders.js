@@ -4,50 +4,39 @@ const auth = require('../middleware/authMiddleware');
 const Reminder = require('../models/Reminder');
 
 // Получить все напоминания текущего пользователя
+
+const auth = require('../middleware/authMiddleware');
+const Reminder = require('../models/Reminder');
+
+// GET /api/reminders
 router.get('/', auth, async (req, res) => {
-  try {
-    const reminders = await Reminder.find({ userId: req.user.userId }); // ✅ исправлено
-    res.json(reminders);
-  } catch (error) {
-    console.error('Ошибка при получении напоминаний:', error.message);
-    res.status(500).json({ error: 'Ошибка сервера при получении данных' });
-  }
+  const reminders = await Reminder.find({ userId: req.user.userId });
+  res.json(reminders);
 });
 
-// Добавить новое напоминание
+// POST /api/reminders
 router.post('/', auth, async (req, res) => {
-  try {
-    const { date, description, amount } = req.body;
-    const newReminder = new Reminder({
-      userId: req.user.userId, // ✅ исправлено
-      date,
-      description,
-      amount,
-    });
-    const saved = await newReminder.save();
-    res.status(201).json(saved);
-  } catch (err) {
-    console.error('Ошибка при сохранении напоминания:', err.message);
-    res.status(400).json({ error: 'Некорректные данные' });
-  }
+  const { date, description, amount } = req.body;
+  const newReminder = new Reminder({
+    userId: req.user.userId, // использовать именно это
+    date,
+    description,
+    amount,
+  });
+  const saved = await newReminder.save();
+  res.status(201).json(saved);
 });
 
-// Удалить напоминание
+// DELETE /api/reminders/:id
 router.delete('/:id', auth, async (req, res) => {
-  try {
-    const result = await Reminder.deleteOne({
-      _id: req.params.id,
-      userId: req.user.userId, // ✅ исправлено
-    });
-
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ error: 'Напоминание не найдено' });
-    }
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Ошибка при удалении напоминания:', error.message);
-    res.status(500).json({ error: 'Ошибка сервера' });
-  }
+  const result = await Reminder.deleteOne({
+    _id: req.params.id,
+    userId: req.user.userId,
+  });
+  if (!result.deletedCount) return res.status(404).json({ error: 'Not found' });
+  res.json({ success: true });
 });
+
+module.exports = router;
 
 module.exports = router;
